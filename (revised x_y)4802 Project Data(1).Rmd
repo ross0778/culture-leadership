@@ -1,0 +1,96 @@
+---
+title: "4802 Project Cleaning Data"
+author: "Delaney Ross"
+date: "`r Sys.Date()`"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(readxl)
+```
+
+```{r}
+cultureDat <- read_excel("GLOBE-Phase-2-Aggregated-Societal-Culture-Data(1).xls")
+leadershipDat <- read_excel("GLOBE-Phase-2-Aggregated-Leadership-Data(2).xls")
+```
+
+## R Markdown
+```{r}
+library(ggplot2)
+library(tidyverse)
+library(jtools)
+```
+
+## Cleaning data and making a new dataset with just the variables of interest
+```{r}
+cultureDat2 <- cultureDat %>% select(`Country Name`, `Country Cluster`,`Collectivism I Societal Practices (Institutional Collectivism)`, `Assertiveness Societal Practices`, `Human Orientation Societal Values`)
+```
+
+```{r}
+leadershipDat2<- leadershipDat %>% select(`Performance Oriented`, `Charismatic/Value-based Global Leadership Dimension`, Integrity, `Team-Oriented Global Leadership Dimension`)
+```
+
+```{r}
+combinedDat<- merge(cultureDat2, leadershipDat2)
+```
+
+## Making a dataset to use for the independent samples t test that only includes countries in the country clusters Eastern Europe or Southern Asia
+```{r}
+southernAsia<- combinedDat %>% 
+  filter(`Country Cluster`=="Southern Asia")
+
+easternEurope<- combinedDat %>% 
+  filter(`Country Cluster`=="Eastern Europe")
+
+regionDat<- rbind.data.frame(southernAsia, easternEurope)
+```
+
+## Running regressions
+```{r}
+hyp1<- lm(`Performance Oriented`~`Collectivism I Societal Practices (Institutional Collectivism)`, data=combinedDat)
+summary(hyp1)
+```
+
+```{r}
+hyp2<- lm(`Charismatic/Value-based Global Leadership Dimension`~`Assertiveness Societal Practices`, data=combinedDat)
+summary(hyp2)
+```
+
+```{r}
+hyp3<- lm(Integrity~`Human Orientation Societal Values`, data=combinedDat)
+summary(hyp3)
+```
+
+## Running independent samples t test
+```{r}
+hyp4<- t.test(`Team-Oriented Global Leadership Dimension`~`Country Cluster`, data=regionDat)
+```
+
+## Visuals
+```{r}
+#hyp1 scatterplot with regression line
+ggplot(combinedDat, aes(`Collectivism I Societal Practices (Institutional Collectivism)`, `Performance Oriented`))+geom_point()+geom_smooth(method="lm", se=FALSE, color="#550000")+xlab("Institutional Collectivism \n Societal Practices")+ylab("Performance Oriented")+theme_apa()
+```
+
+```{r}
+#hyp 2 scatterplot with regression line
+ggplot(combinedDat, aes(`Assertiveness Societal Practices`, `Charismatic/Value-based Global Leadership Dimension`))+geom_point()+geom_smooth(method="lm", se=FALSE, color="#550000")+theme_apa()+xlab("Assertiveness \n Societal Practices")+ylab("Charismatic/Value-Based \n Global Leadership Dimension")
+```
+
+```{r}
+#hyp3 scatterplot with regression line
+ggplot(combinedDat, aes(`Human Orientation Societal Values`, Integrity))+geom_point()+geom_smooth(method="lm", se=FALSE, color="#550000")+theme_apa()+xlab("Human Orientation \n Societal Values")
+```
+
+```{r}
+#hyp4 boxplot
+ggplot(regionDat, aes(`Country Cluster`, `Team-Oriented Global Leadership Dimension`))+geom_boxplot()+theme_apa()+xlab("Region")+ylab("Team-Oriented \n Global Leadership Dimension")
+```
+
